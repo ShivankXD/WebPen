@@ -255,9 +255,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const PROXY_ALLOWLIST = [
 
-  // ↓↓↓ REPLACE THIS WITH YOUR BACKEND URL ↓↓↓
-  "https://yourbackend.com",           // PayPal verify-subscription + any other backend routes
-  // ↑↑↑ REPLACE THIS WITH YOUR BACKEND URL ↑↑↑
+  "https://webpen-backend-7ac1.onrender.com",  // WebPen Render backend
 
   "https://www.googleapis.com",        // Google Drive API (folder create/search, file upload)
   "https://accounts.google.com",       // Google OAuth token revocation

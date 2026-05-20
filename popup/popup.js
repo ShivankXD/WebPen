@@ -59,15 +59,15 @@ function cspFetch(url, options = {}) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
       {
-        action:  "webpen-fetch",
+        action: "webpen-fetch",
         url,
-        method:  options.method  || "GET",
+        method: options.method || "GET",
         headers: options.headers || {},
-        body:    options.body != null
-                   ? (typeof options.body === "string"
-                       ? options.body
-                       : JSON.stringify(options.body))
-                   : null,
+        body: options.body != null
+          ? (typeof options.body === "string"
+            ? options.body
+            : JSON.stringify(options.body))
+          : null,
       },
       (response) => {
         if (chrome.runtime.lastError) {
@@ -79,17 +79,17 @@ function cspFetch(url, options = {}) {
           return;
         }
         if (!response.ok && response.error) {
-          const err    = new Error(response.error);
-          err.status   = response.status;
+          const err = new Error(response.error);
+          err.status = response.status;
           reject(err);
           return;
         }
         const bodyText = response.body ?? "";
         resolve({
-          ok:     response.ok,
+          ok: response.ok,
           status: response.status,
-          json:   () => Promise.resolve(JSON.parse(bodyText)),
-          text:   () => Promise.resolve(bodyText),
+          json: () => Promise.resolve(JSON.parse(bodyText)),
+          text: () => Promise.resolve(bodyText),
         });
       }
     );
@@ -97,33 +97,33 @@ function cspFetch(url, options = {}) {
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const PAYPAL_PLAN_ID   = "P-XXXXXXXXXXXXXXXXXXXXXXXX"; // Replace with your Plan ID
-const BACKEND_BASE_URL = "https://your-backend.com";   // Replace with your backend
+const PAYPAL_PLAN_ID = "P-4U736067JU390512SNIGZQ6A"; // ← paste your PayPal Plan ID here
+const BACKEND_BASE_URL = "https://webpen-backend-7ac1.onrender.com";
 
 // Drive API endpoints
 const DRIVE_UPLOAD_URL =
   "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink";
-const DRIVE_FILES_URL  = "https://www.googleapis.com/drive/v3/files";
-const USERINFO_URL     = "https://www.googleapis.com/oauth2/v2/userinfo";
+const DRIVE_FILES_URL = "https://www.googleapis.com/drive/v3/files";
+const USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
 // Storage keys
-const FOLDER_CACHE_KEY   = "webpen_drive_folder_id";
+const FOLDER_CACHE_KEY = "webpen_drive_folder_id";
 const USERINFO_CACHE_KEY = "webpen_drive_userinfo";
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
-const planBadge       = document.getElementById("plan-badge");
-const statusDot       = document.getElementById("status-dot");
-const statusLabel     = document.getElementById("status-label");
-const toggleBtn       = document.getElementById("toggle-btn");
-const driveBtn        = document.getElementById("drive-btn");
-const upgradeCta      = document.getElementById("upgrade-cta");
-const driveRow        = document.getElementById("drive-feature-row");
-const modalBackdrop   = document.getElementById("modal-backdrop");
-const upgradeModal    = document.getElementById("upgrade-modal");
-const modalClose      = document.getElementById("modal-close");
+const planBadge = document.getElementById("plan-badge");
+const statusDot = document.getElementById("status-dot");
+const statusLabel = document.getElementById("status-label");
+const toggleBtn = document.getElementById("toggle-btn");
+const driveBtn = document.getElementById("drive-btn");
+const upgradeCta = document.getElementById("upgrade-cta");
+const driveRow = document.getElementById("drive-feature-row");
+const modalBackdrop = document.getElementById("modal-backdrop");
+const upgradeModal = document.getElementById("upgrade-modal");
+const modalClose = document.getElementById("modal-close");
 const paypalContainer = document.getElementById("paypal-btn-container");
-const userInfoEl      = document.getElementById("drive-user-info");
-const signOutBtn      = document.getElementById("drive-sign-out");
+const userInfoEl = document.getElementById("drive-user-info");
+const signOutBtn = document.getElementById("drive-sign-out");
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
@@ -146,7 +146,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const active = current.includes(tab.id);
     await chrome.runtime.sendMessage({
       action: active ? "webpen-deactivate" : "webpen-activate",
-      tabId:  tab.id,
+      tabId: tab.id,
     });
     applyActiveUI(!active);
     const updated = active
@@ -156,8 +156,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // ── Upgrade modal ────────────────────────────────────────────────────────
-  upgradeCta.addEventListener("click",   openModal);
-  modalClose.addEventListener("click",   closeModal);
+  upgradeCta.addEventListener("click", openModal);
+  modalClose.addEventListener("click", closeModal);
   modalBackdrop.addEventListener("click", (e) => {
     if (e.target === modalBackdrop) closeModal();
   });
@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 function applyPremiumUI(isPremium) {
   if (!isPremium) return;
   planBadge.textContent = "PREMIUM";
-  planBadge.className   = "badge badge-premium";
+  planBadge.className = "badge badge-premium";
   driveBtn?.classList.remove("hidden");
   upgradeCta?.classList.add("hidden");
   driveRow.classList.replace("locked", "available");
@@ -191,7 +191,7 @@ function applyPremiumUI(isPremium) {
 function applyActiveUI(isActive) {
   statusDot.classList.toggle("active", isActive);
   statusLabel.textContent = isActive ? "Active on this tab" : "Inactive on this tab";
-  toggleBtn.textContent   = isActive ? "Deactivate" : "Activate";
+  toggleBtn.textContent = isActive ? "Deactivate" : "Activate";
   toggleBtn.classList.toggle("active-btn", isActive);
 }
 
@@ -210,7 +210,7 @@ async function loadAndShowUserInfo() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!resp.ok) return;
-    const d    = await resp.json();
+    const d = await resp.json();
     const user = { name: d.name, email: d.email, picture: d.picture };
     await chrome.storage.local.set({ [USERINFO_CACHE_KEY]: user });
     renderUserInfo(user);
@@ -225,15 +225,15 @@ function renderUserInfo(user) {
       ? `<img src="${escHtml(user.picture)}" alt="" class="user-avatar" />`
       : `<div class="user-avatar-placeholder"></div>`}
     <div class="user-text">
-      <span class="user-name">${escHtml(user.name  || "")}</span>
+      <span class="user-name">${escHtml(user.name || "")}</span>
       <span class="user-email">${escHtml(user.email || "")}</span>
     </div>`;
 }
 
 function escHtml(s) {
   return String(s)
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 // ── Drive save ────────────────────────────────────────────────────────────────
@@ -257,7 +257,7 @@ async function handleDriveSave() {
   try {
     const resp = await chrome.runtime.sendMessage({
       action: "webpen-composite-for-drive",
-      tabId:  tab.id,
+      tabId: tab.id,
     });
     if (!resp?.ok) throw new Error(resp?.error || "Composite failed");
     blob = await dataUrlToBlob(resp.dataUrl);
@@ -301,10 +301,10 @@ async function handleDriveSave() {
 
   // Step 5 — Notify content script so toolbar Drive button reacts
   chrome.tabs.sendMessage(tab.id, {
-    action:      "webpen-drive-upload-done",
-    ok:          true,
+    action: "webpen-drive-upload-done",
+    ok: true,
     webViewLink: result.webViewLink,
-    fileName:    result.fileName,
+    fileName: result.fileName,
   });
 
   // Step 6 — Cache user info for "Signed in as" display
@@ -341,7 +341,7 @@ async function ensureWebPenFolder(token) {
   }
 
   // 3. Search Drive for existing "WebPen" folder
-  const q          = encodeURIComponent(
+  const q = encodeURIComponent(
     `name = 'WebPen' and mimeType = 'application/vnd.google-apps.folder' ` +
     `and 'root' in parents and trashed = false`
   );
@@ -357,13 +357,13 @@ async function ensureWebPenFolder(token) {
 
   // 4. Create the folder — routed through cspFetch (JSON in/out, no binary body)
   const createResp = await cspFetch(DRIVE_FILES_URL, {
-    method:  "POST",
+    method: "POST",
     headers: {
-      Authorization:  `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      name:     "WebPen",
+      name: "WebPen",
       mimeType: "application/vnd.google-apps.folder",
     }),
   });
@@ -410,7 +410,7 @@ async function uploadFileToDrive(blob, folderId, token) {
   const metadata = { name: fileName, mimeType: "image/png", parents: [folderId] };
 
   const boundary = "webpen_" + crypto.randomUUID().replace(/-/g, "");
-  const enc      = new TextEncoder();
+  const enc = new TextEncoder();
 
   const metaPart = enc.encode(
     `--${boundary}\r\n` +
@@ -421,22 +421,22 @@ async function uploadFileToDrive(blob, folderId, token) {
     `--${boundary}\r\n` +
     `Content-Type: image/png\r\n\r\n`
   );
-  const mediaBody  = await blob.arrayBuffer();
-  const closing    = enc.encode(`\r\n--${boundary}--`);
+  const mediaBody = await blob.arrayBuffer();
+  const closing = enc.encode(`\r\n--${boundary}--`);
 
   const totalLen = metaPart.byteLength + mediaHeader.byteLength +
-                   mediaBody.byteLength + closing.byteLength;
-  const body     = new Uint8Array(totalLen);
-  let   off      = 0;
-  body.set(metaPart,                     off); off += metaPart.byteLength;
-  body.set(mediaHeader,                  off); off += mediaHeader.byteLength;
-  body.set(new Uint8Array(mediaBody),    off); off += mediaBody.byteLength;
-  body.set(closing,                      off);
+    mediaBody.byteLength + closing.byteLength;
+  const body = new Uint8Array(totalLen);
+  let off = 0;
+  body.set(metaPart, off); off += metaPart.byteLength;
+  body.set(mediaHeader, off); off += mediaHeader.byteLength;
+  body.set(new Uint8Array(mediaBody), off); off += mediaBody.byteLength;
+  body.set(closing, off);
 
   const resp = await fetch(DRIVE_UPLOAD_URL, {
-    method:  "POST",
+    method: "POST",
     headers: {
-      Authorization:  `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": `multipart/related; boundary=${boundary}`,
     },
     body,
@@ -452,7 +452,7 @@ function getAuthToken({ interactive }) {
     chrome.identity.getAuthToken({ interactive }, (token) => {
       if (chrome.runtime.lastError || !token) {
         const err = new Error(chrome.runtime.lastError?.message || "Auth failed");
-        err.code  = "AUTH_FAILED";
+        err.code = "AUTH_FAILED";
         reject(err);
         return;
       }
@@ -474,7 +474,7 @@ async function handleSignOut() {
     try {
       // cspFetch for consistency — routes through SW to avoid any connect-src block
       await cspFetch(`https://accounts.google.com/o/oauth2/revoke?token=${stale}`);
-    } catch {}
+    } catch { }
     await new Promise(r => chrome.identity.removeCachedAuthToken({ token: stale }, r));
   }
   await chrome.storage.local.remove([FOLDER_CACHE_KEY, USERINFO_CACHE_KEY]);
@@ -498,16 +498,16 @@ async function driveGet(url, token) {
 async function assertOk(resp, label) {
   if (resp.ok) return;
   let detail = "";
-  try { const e = await resp.json(); detail = e?.error?.message || ""; } catch {}
-  const err  = new Error(`${label} (HTTP ${resp.status}${detail ? ": " + detail : ""})`);
+  try { const e = await resp.json(); detail = e?.error?.message || ""; } catch { }
+  const err = new Error(`${label} (HTTP ${resp.status}${detail ? ": " + detail : ""})`);
   err.status = resp.status;
   throw err;
 }
 
 function buildFileName() {
   const now = new Date(), pad = n => String(n).padStart(2, "0");
-  return `webpen-${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}` +
-         `-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
+  return `webpen-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+    `-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
 }
 
 async function dataUrlToBlob(dataUrl) {
@@ -526,11 +526,11 @@ async function fetchAndCacheUserInfo(token) {
     // cspFetch — consistent with all other Drive API calls
     const resp = await cspFetch(USERINFO_URL, { headers: { Authorization: `Bearer ${token}` } });
     if (!resp.ok) return;
-    const d    = await resp.json();
+    const d = await resp.json();
     const user = { name: d.name, email: d.email, picture: d.picture };
     await chrome.storage.local.set({ [USERINFO_CACHE_KEY]: user });
     renderUserInfo(user);
-  } catch {}
+  } catch { }
 }
 
 // ── Drive button state machine ────────────────────────────────────────────────
@@ -546,7 +546,7 @@ const DRIVE_BTN_ICON = `
 
 function setDriveBtnState(state, label) {
   if (!driveBtn) return;
-  driveBtn.disabled  = state === "loading";
+  driveBtn.disabled = state === "loading";
   driveBtn.className = "drive-btn" + (state !== "idle" ? ` drive-btn-${state}` : "");
   driveBtn.innerHTML = state === "loading"
     ? `<span class="drive-spinner"></span>${label}`
@@ -555,9 +555,9 @@ function setDriveBtnState(state, label) {
 
 function resetDriveBtnState() {
   if (!driveBtn) return;
-  driveBtn.disabled   = false;
-  driveBtn.className  = "drive-btn";
-  driveBtn.innerHTML  = `${DRIVE_BTN_ICON} Sync to Google Drive`;
+  driveBtn.disabled = false;
+  driveBtn.className = "drive-btn";
+  driveBtn.innerHTML = `${DRIVE_BTN_ICON} Sync to Google Drive`;
 }
 
 let _resetTimer;
@@ -567,7 +567,7 @@ function scheduleReset(ms = 2500) {
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
-function openModal()  { modalBackdrop.classList.remove("hidden"); mountPayPalButton(); }
+function openModal() { modalBackdrop.classList.remove("hidden"); mountPayPalButton(); }
 function closeModal() { modalBackdrop.classList.add("hidden"); }
 
 // ── PayPal ────────────────────────────────────────────────────────────────────
@@ -591,10 +591,10 @@ function mountPayPalButton() {
       try {
         const userId = await getExtensionUserId();
         // cspFetch routes through background.js — consistent with all backend calls
-        const resp   = await cspFetch(`${BACKEND_BASE_URL}/paypal/verify-subscription`, {
-          method:  "POST",
+        const resp = await cspFetch(`${BACKEND_BASE_URL}/paypal/verify-subscription`, {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ subscriptionId: data.subscriptionID, extensionUserId: userId }),
+          body: JSON.stringify({ subscriptionId: data.subscriptionID, userId }),
         });
         const result = await resp.json();
         if (result.isPremium) {
@@ -611,8 +611,8 @@ function mountPayPalButton() {
         alert("Could not verify subscription. Please try again.");
       }
     },
-    onError:  err => console.error("[WebPen] PayPal:", err),
-    onCancel: ()  => {},
+    onError: err => console.error("[WebPen] PayPal:", err),
+    onCancel: () => { },
   }).render("#paypal-btn-container");
 }
 

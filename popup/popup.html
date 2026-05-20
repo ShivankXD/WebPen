@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WebPen</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="popup.css" />
 </head>
+
 <body>
 
   <!-- ── Main popup ─────────────────────────────────── -->
@@ -16,8 +19,10 @@
     <!-- Header -->
     <header>
       <div class="logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
         </svg>
         <span>WebPen</span>
       </div>
@@ -34,21 +39,27 @@
     <!-- Feature list -->
     <ul class="feature-list">
       <li class="available">
-        <svg class="feat-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg class="feat-icon" viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
         Freehand pen &amp; eraser
       </li>
       <li class="available">
-        <svg class="feat-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg class="feat-icon" viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
         Screenshot with drawings
       </li>
       <li class="available">
-        <svg class="feat-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg class="feat-icon" viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
         3 pen colours, brush sizes
       </li>
       <li class="locked" id="drive-feature-row">
         <svg class="feat-icon lock-icon" viewBox="0 0 24 24">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
         Save to Google Drive
         <span class="premium-tag">PREMIUM</span>
@@ -61,12 +72,13 @@
     <!-- Drive save button (visible to premium users only) -->
     <button id="drive-btn" class="drive-btn hidden">
       <svg width="16" height="16" viewBox="0 0 87.3 78" fill="currentColor">
-        <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-        <path d="M43.65 25L29.9 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 48.5c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
-        <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 57c.8-1.4 1.2-2.95 1.2-4.5H59.8L73.55 76.8z" fill="#ea4335"/>
-        <path d="M43.65 25L57.4 0H29.9z" fill="#00832d"/>
-        <path d="M59.8 52.5H87.3c0-1.55-.4-3.1-1.2-4.5L60.8 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25z" fill="#2684fc"/>
-        <path d="M27.5 53l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h51c1.6 0 3.15-.45 4.5-1.2L59.8 53z" fill="#ffba00"/>
+        <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da" />
+        <path d="M43.65 25L29.9 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 48.5c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47" />
+        <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 57c.8-1.4 1.2-2.95 1.2-4.5H59.8L73.55 76.8z"
+          fill="#ea4335" />
+        <path d="M43.65 25L57.4 0H29.9z" fill="#00832d" />
+        <path d="M59.8 52.5H87.3c0-1.55-.4-3.1-1.2-4.5L60.8 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25z" fill="#2684fc" />
+        <path d="M27.5 53l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h51c1.6 0 3.15-.45 4.5-1.2L59.8 53z" fill="#ffba00" />
       </svg>
       Save to Google Drive
     </button>
@@ -76,7 +88,10 @@
 
     <!-- Upgrade CTA (visible to free users) -->
     <button id="upgrade-cta" class="upgrade-cta-btn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>
       Upgrade to Premium
     </button>
 
@@ -93,7 +108,7 @@
       <button id="modal-close" aria-label="Close">&times;</button>
 
       <div class="modal-eyebrow">Unlock the full experience</div>
-      <h2 class="modal-title">WebPen<br/><span>Premium</span></h2>
+      <h2 class="modal-title">WebPen<br /><span>Premium</span></h2>
       <p class="modal-subtitle">One subscription. Every feature. Forever yours.</p>
 
       <!-- Pricing card -->
@@ -129,13 +144,14 @@
 
   <!-- PayPal JS SDK — loads asynchronously -->
   <!--
-    Replace YOUR_PAYPAL_CLIENT_ID with your live/sandbox client ID.
-    The vault=true&intent=subscription params are required for subscriptions.
+    ↓↓↓ PASTE YOUR PAYPAL LIVE CLIENT ID BELOW ↓↓↓
+    Get it from: developer.paypal.com → My Apps → your app → Live Credentials
+    For testing: use your Sandbox client ID instead.
   -->
   <script
-    src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&vault=true&intent=subscription&currency=USD"
-    data-sdk-integration-source="button-factory"
-  ></script>
+    src="https://www.paypal.com/sdk/js?client-id=AZIHDni8HXTVIHwjgZh9Y4sClTjW4xsiHPKJWeH87wZr3Qzrbd0er4JDz6kaJsbZT-d1HNTv5PUEQc-m&vault=true&intent=subscription&currency=USD"
+    data-sdk-integration-source="button-factory"></script>
   <script src="popup.js"></script>
 </body>
+
 </html>
