@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "WebPen",
+  "name": "WebPen: Page Marker & Web Drawing Tool",
   "version": "4.0.0",
   "description": "Draw on any webpage. Premium: sync to Google Drive.",
   "permissions": [
