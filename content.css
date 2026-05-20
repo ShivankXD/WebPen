@@ -1,0 +1,433 @@
+/*
+ * WebPen — content.css  (injected into host pages via chrome.scripting.insertCSS)
+ *
+ * ── CSP SAFETY NOTES ─────────────────────────────────────────────────────────
+ *
+ * 1. NO @import.
+ *    @import fires a sub-request from the HOST PAGE'S origin, making it
+ *    subject to the page's Content-Security-Policy. A page with:
+ *      style-src 'self'   or   style-src 'nonce-xyz'
+ *    will block any @import to fonts.googleapis.com with:
+ *      Refused to load stylesheet … violates CSP directive: "style-src 'self'"
+ *    We removed the Google Fonts @import entirely. Font is bundled locally.
+ *
+ * 2. @font-face uses chrome-extension:// URLs (written by content.js at runtime).
+ *    chrome-extension:// URLs are extension-origin resources. Chrome does NOT
+ *    subject them to the host page's font-src CSP directive — they are allowed
+ *    unconditionally as long as they are listed in web_accessible_resources.
+ *    The actual @font-face rule is injected by content.js → injectFont() so
+ *    it can call chrome.runtime.getURL() to get the correct extension URL.
+ *
+ * 3. chrome.scripting.insertCSS() bypasses page CSP entirely.
+ *    Styles inserted this way are treated as extension-origin, not page-origin.
+ *    So this entire file is already CSP-safe. The @import was the only problem.
+ *
+ * 4. All backend / PayPal calls go through chrome.runtime.sendMessage() to
+ *    background.js (runs in extension service worker, unaffected by page CSP).
+ *    Content scripts never make fetch() calls to external origins themselves.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * ── SCROLL / VIEWPORT NOTES ──────────────────────────────────────────────────
+ *
+ * position: fixed is the correct and only value for the canvas and toolbar.
+ * It anchors elements to the VIEWPORT, not the document. This means:
+ *   • Scrolling the page does not move them.
+ *   • top:0 left:0 on #webpen-canvas always means the top-left of the screen.
+ *   • Drawing coordinates (clientX/clientY) are also viewport-relative, so
+ *     there is no coordinate mismatch at any scroll position.
+ *
+ * The canvas PIXEL BUFFER (canvas.width / canvas.height) is sized in content.js
+ * using window.innerWidth * devicePixelRatio to stay crisp on HiDPI / scaled
+ * displays. The CSS width/height stays at 100vw/100vh regardless.
+ *
+ * will-change: transform promotes fixed elements to their own compositor layer,
+ * preventing them from being repainted during page scroll (pure GPU transform).
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/* ── Canvas overlay ────────────────────────────────────────────────────────── */
+
+#webpen-canvas {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2147483646 !important;
+  pointer-events: none !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  /* Ensure no host-page transform shifts the canvas */
+  transform: none !important;
+  transform-origin: top left !important;
+  /* Own compositor layer: page scroll triggers zero canvas repaint */
+  will-change: transform !important;
+  /* Prevent the page's own scroll container from clipping us */
+  overflow: visible !important;
+}
+
+#webpen-canvas.active {
+  pointer-events: all !important;
+  cursor: crosshair !important;
+}
+
+#webpen-canvas.eraser-mode {
+  cursor: cell !important;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+
+#webpen-toolbar {
+  all: initial;
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  top: 50% !important;
+  left: 20px !important;
+  transform: translateY(-50%) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: #0d0d0f !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 18px !important;
+  padding: 14px 10px !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04),
+    0 8px 32px rgba(0,0,0,0.6),
+    0 2px 8px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  font-family: 'WebPenMono', monospace !important;
+  user-select: none !important;
+  cursor: default !important;
+  pointer-events: all !important;
+  will-change: transform !important;
+}
+
+/* Drag handle */
+#webpen-drag-handle {
+  all: initial;
+  width: 28px !important;
+  height: 4px !important;
+  background: rgba(255,255,255,0.12) !important;
+  border-radius: 2px !important;
+  cursor: grab !important;
+  display: block !important;
+  margin-bottom: 4px !important;
+}
+#webpen-drag-handle:active { cursor: grabbing !important; }
+
+/* Logo label */
+#webpen-logo {
+  all: initial;
+  font-family: 'WebPenMono', monospace !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.15em !important;
+  color: rgba(255,255,255,0.25) !important;
+  text-transform: uppercase !important;
+  display: block !important;
+  margin-bottom: 6px !important;
+}
+
+/* Divider */
+.webpen-divider {
+  all: initial;
+  width: 28px !important;
+  height: 1px !important;
+  background: rgba(255,255,255,0.07) !important;
+  display: block !important;
+  margin: 2px 0 !important;
+}
+
+/* Icon buttons */
+.webpen-btn {
+  all: initial;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  transition: background 0.15s, transform 0.1s !important;
+  position: relative !important;
+  font-family: 'WebPenMono', monospace !important;
+}
+.webpen-btn:hover  { background: rgba(255,255,255,0.07) !important; }
+.webpen-btn:active { transform: scale(0.92) !important; }
+.webpen-btn.webpen-selected {
+  background: rgba(255,255,255,0.12) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.1) !important;
+}
+
+/* Tooltip */
+.webpen-btn::after {
+  content: attr(data-tip) !important;
+  position: absolute !important;
+  left: calc(100% + 10px) !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  background: #1a1a1e !important;
+  color: rgba(255,255,255,0.8) !important;
+  font-size: 10px !important;
+  font-family: 'WebPenMono', monospace !important;
+  white-space: nowrap !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.2s !important;
+}
+.webpen-btn:hover::after { opacity: 1 !important; }
+
+/* Color swatches */
+.webpen-color-dot {
+  all: initial;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  display: block !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
+}
+.webpen-btn.webpen-selected .webpen-color-dot {
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.6), 0 1px 4px rgba(0,0,0,0.5) !important;
+}
+
+/* Brush size slider */
+#webpen-size-wrap {
+  all: initial;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 0 !important;
+}
+#webpen-size-label {
+  all: initial;
+  font-family: 'WebPenMono', monospace !important;
+  font-size: 9px !important;
+  color: rgba(255,255,255,0.3) !important;
+  display: block !important;
+  letter-spacing: 0.05em !important;
+}
+#webpen-size-value {
+  all: initial;
+  font-family: 'WebPenMono', monospace !important;
+  font-size: 9px !important;
+  color: rgba(255,255,255,0.5) !important;
+  display: block !important;
+}
+
+/* Vertical range input */
+#webpen-size-slider {
+  all: initial;
+  -webkit-appearance: slider-vertical !important;
+  appearance: slider-vertical !important;
+  writing-mode: vertical-lr !important;
+  direction: rtl !important;
+  width: 22px !important;
+  height: 80px !important;
+  cursor: pointer !important;
+  accent-color: #ffffff !important;
+  display: block !important;
+  opacity: 0.7 !important;
+}
+#webpen-size-slider:hover { opacity: 1 !important; }
+
+/* Clear button */
+#webpen-clear-btn {
+  all: initial;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 30px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  background: rgba(220,50,50,0.1) !important;
+  border: 1px solid rgba(220,50,50,0.2) !important;
+  font-family: 'WebPenMono', monospace !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  color: rgba(220,80,80,0.8) !important;
+  text-transform: uppercase !important;
+  transition: background 0.15s, transform 0.1s !important;
+  position: relative !important;
+}
+#webpen-clear-btn:hover {
+  background: rgba(220,50,50,0.2) !important;
+  color: rgba(255,100,100,1) !important;
+}
+#webpen-clear-btn:active { transform: scale(0.92) !important; }
+#webpen-clear-btn::after {
+  content: attr(data-tip) !important;
+  position: absolute !important;
+  left: calc(100% + 10px) !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  background: #1a1a1e !important;
+  color: rgba(255,255,255,0.8) !important;
+  font-size: 10px !important;
+  font-family: 'WebPenMono', monospace !important;
+  white-space: nowrap !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.2s !important;
+}
+#webpen-clear-btn:hover::after { opacity: 1 !important; }
+
+/* Toggle pill (top-right) */
+#webpen-toggle-btn {
+  all: initial;
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  top: 16px !important;
+  right: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 7px 13px !important;
+  background: #0d0d0f !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 99px !important;
+  cursor: pointer !important;
+  font-family: 'WebPenMono', monospace !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.12em !important;
+  color: rgba(255,255,255,0.5) !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+  transition: background 0.15s, color 0.15s !important;
+  pointer-events: all !important;
+  user-select: none !important;
+  will-change: transform !important;
+}
+#webpen-toggle-btn:hover {
+  background: #1a1a1e !important;
+  color: rgba(255,255,255,0.9) !important;
+}
+#webpen-toggle-btn .webpen-status-dot {
+  all: initial;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #4ade80 !important;
+  display: inline-block !important;
+  box-shadow: 0 0 6px #4ade80 !important;
+}
+#webpen-toggle-btn.drawing-off .webpen-status-dot {
+  background: rgba(255,255,255,0.2) !important;
+  box-shadow: none !important;
+}
+
+/* ── Camera / Screenshot button ─────────────────────────────────────────── */
+
+#webpen-shot-btn { position: relative !important; }
+
+#webpen-shot-btn.webpen-capturing svg {
+  animation: webpen-spin 0.7s linear infinite !important;
+}
+@keyframes webpen-spin { to { transform: rotate(360deg); } }
+
+#webpen-shot-btn.webpen-capture-success {
+  background: rgba(74,222,128,0.15) !important;
+  box-shadow: 0 0 0 1px rgba(74,222,128,0.4) !important;
+}
+#webpen-shot-btn.webpen-capture-success svg { stroke: #4ade80 !important; }
+
+#webpen-shot-btn.webpen-capture-error {
+  background: rgba(239,68,68,0.15) !important;
+  box-shadow: 0 0 0 1px rgba(239,68,68,0.4) !important;
+}
+#webpen-shot-btn.webpen-capture-error svg { stroke: #ef4444 !important; }
+
+#webpen-flash-overlay {
+  all: initial;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483645 !important;
+  background: white !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  animation: webpen-flash 0.35s ease-out forwards !important;
+}
+@keyframes webpen-flash {
+  0%   { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+
+/* ── Drive toolbar button (premium) ─────────────────────────────────────── */
+
+.webpen-hidden { display: none !important; }
+
+#webpen-drive-btn { position: relative !important; }
+#webpen-drive-btn::after {
+  content: attr(data-tip) !important;
+  left: calc(100% + 10px) !important;
+  white-space: nowrap !important;
+}
+
+#webpen-drive-btn.webpen-drive-syncing svg {
+  animation: webpen-spin 1s linear infinite !important;
+}
+#webpen-drive-btn.webpen-drive-success {
+  background: rgba(74,222,128,0.12) !important;
+  box-shadow: 0 0 0 1px rgba(74,222,128,0.35) !important;
+}
+#webpen-drive-btn.webpen-drive-error {
+  background: rgba(239,68,68,0.12) !important;
+  box-shadow: 0 0 0 1px rgba(239,68,68,0.35) !important;
+}
+
+/* ── Drive success toast ─────────────────────────────────────────────────── */
+
+#webpen-drive-toast {
+  all: initial !important;
+  position: fixed !important;
+  bottom: 24px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 16px !important;
+  background: #0d0d0f !important;
+  border: 1px solid rgba(74,222,128,0.25) !important;
+  border-radius: 99px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+  font-family: 'WebPenMono', monospace !important;
+  font-size: 11px !important;
+  color: rgba(255,255,255,0.8) !important;
+  white-space: nowrap !important;
+  pointer-events: all !important;
+  animation: webpen-toast-in 0.3s cubic-bezier(0.34,1.56,0.64,1) !important;
+  transition: opacity 0.35s ease !important;
+}
+#webpen-drive-toast a {
+  all: initial !important;
+  font-family: 'WebPenMono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #4ade80 !important;
+  cursor: pointer !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
+}
+#webpen-drive-toast a:hover { color: #86efac !important; }
+#webpen-drive-toast.webpen-toast-fade { opacity: 0 !important; }
+
+@keyframes webpen-toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
