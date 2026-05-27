@@ -246,23 +246,18 @@
   align-items: center !important;
   justify-content: center !important;
   width: 36px !important;
-  height: 30px !important;
-  border-radius: 8px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
   cursor: pointer !important;
-  background: rgba(220,50,50,0.1) !important;
-  border: 1px solid rgba(220,50,50,0.2) !important;
-  font-family: 'WebPenMono', monospace !important;
-  font-size: 9px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.08em !important;
-  color: rgba(220,80,80,0.8) !important;
-  text-transform: uppercase !important;
   transition: background 0.15s, transform 0.1s !important;
   position: relative !important;
+  font-family: 'WebPenMono', monospace !important;
 }
 #webpen-clear-btn:hover {
-  background: rgba(220,50,50,0.2) !important;
-  color: rgba(255,100,100,1) !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+}
+#webpen-clear-btn:hover svg {
+  stroke: #ef4444 !important;
 }
 #webpen-clear-btn:active { transform: scale(0.92) !important; }
 #webpen-clear-btn::after {

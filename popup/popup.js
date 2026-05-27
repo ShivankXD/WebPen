@@ -191,7 +191,12 @@ function applyPremiumUI(isPremium) {
 function applyActiveUI(isActive) {
   statusDot.classList.toggle("active", isActive);
   statusLabel.textContent = isActive ? "Active on this tab" : "Inactive on this tab";
-  toggleBtn.textContent = isActive ? "Deactivate" : "Activate";
+  const btnSpan = toggleBtn.querySelector("span");
+  if (btnSpan) {
+    btnSpan.textContent = isActive ? "Turn Off" : "Turn On";
+  } else {
+    toggleBtn.textContent = isActive ? "Turn Off" : "Turn On";
+  }
   toggleBtn.classList.toggle("active-btn", isActive);
 }
 
@@ -567,53 +572,93 @@ function scheduleReset(ms = 2500) {
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
-function openModal() { modalBackdrop.classList.remove("hidden"); mountPayPalButton(); }
-function closeModal() { modalBackdrop.classList.add("hidden"); }
+let statusPollInterval = null;
 
-// ── PayPal ────────────────────────────────────────────────────────────────────
-let paypalMounted = false;
+function openModal() {
+  document.body.classList.add("modal-open");
+  modalBackdrop.classList.remove("hidden");
+  setupCheckoutButton();
+}
 
-function mountPayPalButton() {
-  if (paypalMounted) return;
-  if (typeof paypal === "undefined") {
-    paypalContainer.innerHTML = `<p style="color:rgba(255,255,255,0.3);font-size:11px;
-      text-align:center;padding:12px 0">⚠ PayPal SDK failed to load.</p>`;
-    return;
+function closeModal() {
+  document.body.classList.remove("modal-open");
+  modalBackdrop.classList.add("hidden");
+  if (statusPollInterval) {
+    clearInterval(statusPollInterval);
+    statusPollInterval = null;
   }
-  paypalMounted = true;
-  paypalContainer.innerHTML = "";
+}
 
-  paypal.Buttons({
-    style: { shape: "pill", color: "gold", layout: "vertical", label: "subscribe" },
-    createSubscription: (_d, actions) =>
-      actions.subscription.create({ plan_id: PAYPAL_PLAN_ID }),
-    onApprove: async (data) => {
-      try {
-        const userId = await getExtensionUserId();
-        // cspFetch routes through background.js — consistent with all backend calls
-        const resp = await cspFetch(`${BACKEND_BASE_URL}/paypal/verify-subscription`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subscriptionId: data.subscriptionID, userId }),
-        });
-        const result = await resp.json();
-        if (result.isPremium) {
-          await chrome.storage.sync.set({ isPremium: true, premiumEmail: result.email || "" });
-          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+// ── Secure Checkout & Polling ──────────────────────────────────────────────────
+function setupCheckoutButton() {
+  const checkoutBtn = document.getElementById("checkout-btn");
+  if (!checkoutBtn) return;
+
+  checkoutBtn.onclick = async () => {
+    checkoutBtn.disabled = true;
+    checkoutBtn.innerHTML = `<span class="drive-spinner" style="margin-right: 4px; vertical-align: middle;"></span>Opening secure checkout…`;
+
+    try {
+      const userId = await getExtensionUserId();
+      const checkoutUrl = `${BACKEND_BASE_URL}/checkout.html?userId=${encodeURIComponent(userId)}`;
+
+      // Open a native-looking secure payment dialog window
+      chrome.windows.create({
+        url: checkoutUrl,
+        type: "popup",
+        width: 480,
+        height: 680,
+      });
+
+      // Start short-polling status
+      startStatusPolling(userId);
+
+      checkoutBtn.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; margin-right: 4px; vertical-align: -1px;">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        Waiting for payment…
+      `;
+    } catch (err) {
+      console.error("[WebPen] Checkout launch error:", err);
+      checkoutBtn.disabled = false;
+      checkoutBtn.innerHTML = `⚠ Checkout failed. Try again`;
+    }
+  };
+}
+
+function startStatusPolling(userId) {
+  if (statusPollInterval) clearInterval(statusPollInterval);
+
+  statusPollInterval = setInterval(async () => {
+    try {
+      const resp = await cspFetch(`${BACKEND_BASE_URL}/api/user-status?userId=${encodeURIComponent(userId)}`);
+      const result = await resp.json();
+
+      if (result.isPremium) {
+        clearInterval(statusPollInterval);
+        statusPollInterval = null;
+
+        await chrome.storage.sync.set({ isPremium: true, premiumEmail: result.email || "" });
+
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab) {
           chrome.tabs.sendMessage(tab.id, { action: "webpen-premium-activated" });
-          upgradeModal.classList.add("success-state");
-          setTimeout(() => { closeModal(); applyPremiumUI(true); loadAndShowUserInfo(); }, 2000);
-        } else {
-          alert("Payment received but verification failed. Contact support.");
         }
-      } catch (err) {
-        console.error("[WebPen] Sub verification failed:", err);
-        alert("Could not verify subscription. Please try again.");
+
+        upgradeModal.classList.add("success-state");
+        setTimeout(() => {
+          closeModal();
+          applyPremiumUI(true);
+          loadAndShowUserInfo();
+        }, 2000);
       }
-    },
-    onError: err => console.error("[WebPen] PayPal:", err),
-    onCancel: () => { },
-  }).render("#paypal-btn-container");
+    } catch (err) {
+      console.error("[WebPen] Status poll error:", err);
+    }
+  }, 2000);
 }
 
 async function getExtensionUserId() {

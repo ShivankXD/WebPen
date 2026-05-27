@@ -248,6 +248,7 @@
     brushSize: 6,
     lastX:     0,
     lastY:     0,
+    screenLocked: false,
   };
 
   const COLORS = [
@@ -365,7 +366,16 @@
 
     <div class="webpen-divider"></div>
 
-    <div id="webpen-clear-btn" data-tip="Clear all drawings">CLR</div>
+    <div class="webpen-divider"></div>
+
+    <div class="webpen-btn" id="webpen-lock-btn" data-tip="Lock screen">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="rgba(255,255,255,0.75)" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+      </svg>
+    </div>
 
     <div class="webpen-divider"></div>
 
@@ -387,6 +397,19 @@
         <path d="M43.65 25L57.4 0H29.9z" fill="#00832d"/>
         <path d="M59.8 52.5H87.3c0-1.55-.4-3.1-1.2-4.5L60.8 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25z" fill="#2684fc"/>
         <path d="M27.5 53l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h51c1.6 0 3.15-.45 4.5-1.2L59.8 53z" fill="#ffba00"/>
+      </svg>
+    </div>
+
+    <div class="webpen-divider"></div>
+
+    <div class="webpen-btn" id="webpen-clear-btn" data-tip="Clear all drawings" style="margin-top: 2px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="rgba(255,255,255,0.75)" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        <line x1="10" y1="11" x2="10" y2="17"></line>
+        <line x1="14" y1="11" x2="14" y2="17"></line>
       </svg>
     </div>
   `;
@@ -499,6 +522,61 @@
       const dpr = window.devicePixelRatio || 1;
       ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
     });
+
+  // Lock / Unlock screen functionality
+  const lockBtn = document.getElementById("webpen-lock-btn");
+
+  function updateLockUI() {
+    if (!lockBtn) return;
+    lockBtn.classList.toggle("webpen-selected", state.screenLocked);
+    if (state.screenLocked) {
+      lockBtn.setAttribute("data-tip", "Unlock screen");
+      lockBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="#f5c842" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      `;
+    } else {
+      lockBtn.setAttribute("data-tip", "Lock screen");
+      lockBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="rgba(255,255,255,0.75)" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+        </svg>
+      `;
+    }
+  }
+
+  if (lockBtn) {
+    lockBtn.addEventListener("click", () => {
+      state.screenLocked = !state.screenLocked;
+      updateLockUI();
+    });
+  }
+
+  // Scroll locking event handlers
+  const preventDefaultScroll = (e) => {
+    if (state.drawing && state.screenLocked) {
+      e.preventDefault();
+    }
+  };
+
+  const scrollKeys = { 32: 1, 33: 1, 34: 1, 35: 1, 36: 1, 37: 1, 38: 1, 39: 1, 40: 1 };
+  const preventDefaultForScrollKeys = (e) => {
+    if (state.drawing && state.screenLocked && scrollKeys[e.keyCode]) {
+      e.preventDefault();
+      return false;
+    }
+  };
+
+  window.addEventListener("wheel", preventDefaultScroll, { passive: false });
+  window.addEventListener("touchmove", preventDefaultScroll, { passive: false });
+  window.addEventListener("keydown", preventDefaultForScrollKeys, { passive: false });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION H — CANVAS DRAWING
@@ -814,6 +892,11 @@
     }
 
     clearTimeout(resizeTimer);
+
+    // Remove scroll locking listeners
+    window.removeEventListener("wheel", preventDefaultScroll);
+    window.removeEventListener("touchmove", preventDefaultScroll);
+    window.removeEventListener("keydown", preventDefaultForScrollKeys);
 
     // Remove all injected DOM
     canvas.remove();

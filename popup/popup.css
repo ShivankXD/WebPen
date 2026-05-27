@@ -239,8 +239,12 @@ header {
 .hidden { display: none !important; }
 
 /* ── Modal backdrop ─────────────────────────────────────── */
+body.modal-open {
+  min-height: 560px;
+}
+
 #modal-backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   background: rgba(0,0,0,0.75);
   backdrop-filter: blur(4px);
@@ -399,32 +403,36 @@ header {
   flex-shrink: 0;
 }
 
-/* PayPal button container */
-#paypal-btn-container {
-  min-height: 48px;
-  margin-bottom: 10px;
-}
-
-.paypal-loading {
+/* PayPal button container / Checkout button */
+.checkout-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 48px;
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  gap: 7px;
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(135deg, #f5c842 0%, #e0ac10 100%);
+  border: none;
+  border-radius: var(--radius);
+  color: #0a0a0c;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 10px;
 }
-
-.paypal-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255,255,255,0.1);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+.checkout-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+.checkout-btn:hover { opacity: 0.9; }
+.checkout-btn:active { transform: scale(0.98); }
 
 .modal-legal {
   font-family: var(--font-mono);
