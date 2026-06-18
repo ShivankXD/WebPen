@@ -107,18 +107,25 @@
   will-change: transform !important;
 }
 
-/* Drag handle */
+/* Drag handle — grab cursor signals the bar is movable */
 #webpen-drag-handle {
   all: initial;
-  width: 28px !important;
-  height: 4px !important;
-  background: rgba(255,255,255,0.12) !important;
-  border-radius: 2px !important;
+  width: 32px !important;
+  height: 5px !important;
+  background: rgba(255,255,255,0.18) !important;
+  border-radius: 3px !important;
   cursor: grab !important;
   display: block !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 6px !important;
+  flex-shrink: 0 !important;
+  transition: background 0.15s !important;
 }
-#webpen-drag-handle:active { cursor: grabbing !important; }
+#webpen-drag-handle:hover { background: rgba(255,255,255,0.38) !important; }
+#webpen-drag-handle:active,
+#webpen-drag-handle.webpen-dragging {
+  cursor: grabbing !important;
+  background: rgba(255,255,255,0.45) !important;
+}
 
 /* Logo label */
 #webpen-logo {
@@ -185,17 +192,72 @@
 }
 .webpen-btn:hover::after { opacity: 1 !important; }
 
+/* Color palette grid — keeps the 15 swatches compact (3 columns) */
+#webpen-color-grid {
+  all: initial;
+  display: grid !important;
+  grid-template-columns: repeat(3, auto) !important;
+  gap: 2px !important;
+  justify-items: center !important;
+  align-items: center !important;
+}
+
+/* Compact color buttons inside the grid */
+.webpen-color-btn {
+  width: 28px !important;
+  height: 28px !important;
+}
+
 /* Color swatches */
 .webpen-color-dot {
   all: initial;
-  width: 14px !important;
-  height: 14px !important;
+  width: 15px !important;
+  height: 15px !important;
   border-radius: 50% !important;
   display: block !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
 }
 .webpen-btn.webpen-selected .webpen-color-dot {
   box-shadow: 0 0 0 2px rgba(255,255,255,0.6), 0 1px 4px rgba(0,0,0,0.5) !important;
+}
+
+/* ── Premium (locked) colours ────────────────────────────────────────────── */
+.webpen-premium-color { position: relative !important; }
+
+/* Dim the swatch while it's locked */
+.webpen-premium-color.webpen-locked .webpen-color-dot {
+  opacity: 0.45 !important;
+  filter: grayscale(0.35) !important;
+}
+
+/* Small gold padlock badge in the corner of locked swatches */
+.webpen-color-lock {
+  all: initial;
+  position: absolute !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 13px !important;
+  height: 13px !important;
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #f5c842, #ff6b35) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important;
+  pointer-events: none !important;
+}
+.webpen-premium-color.webpen-locked .webpen-color-lock {
+  display: flex !important;
+}
+
+/* Shake feedback when a locked colour is clicked */
+.webpen-shake { animation: webpen-shake 0.45s ease !important; }
+@keyframes webpen-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-3px); }
+  40%      { transform: translateX(3px); }
+  60%      { transform: translateX(-2px); }
+  80%      { transform: translateX(2px); }
 }
 
 /* Brush size slider */
@@ -361,68 +423,94 @@
   100% { opacity: 0; }
 }
 
-/* ── Drive toolbar button (premium) ─────────────────────────────────────── */
-
 .webpen-hidden { display: none !important; }
 
-#webpen-drive-btn { position: relative !important; }
-#webpen-drive-btn::after {
-  content: attr(data-tip) !important;
-  left: calc(100% + 10px) !important;
-  white-space: nowrap !important;
-}
+/* ── Generic toast (upgrade nudge / notices) ─────────────────────────────── */
 
-#webpen-drive-btn.webpen-drive-syncing svg {
-  animation: webpen-spin 1s linear infinite !important;
-}
-#webpen-drive-btn.webpen-drive-success {
-  background: rgba(74,222,128,0.12) !important;
-  box-shadow: 0 0 0 1px rgba(74,222,128,0.35) !important;
-}
-#webpen-drive-btn.webpen-drive-error {
-  background: rgba(239,68,68,0.12) !important;
-  box-shadow: 0 0 0 1px rgba(239,68,68,0.35) !important;
-}
-
-/* ── Drive success toast ─────────────────────────────────────────────────── */
-
-#webpen-drive-toast {
+#webpen-toast {
   all: initial !important;
   position: fixed !important;
   bottom: 24px !important;
   left: 50% !important;
-  transform: translateX(-50%) !important;
   z-index: 2147483647 !important;
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
-  padding: 10px 16px !important;
+  padding: 11px 18px !important;
   background: #0d0d0f !important;
-  border: 1px solid rgba(74,222,128,0.25) !important;
+  border: 1px solid rgba(245,200,66,0.3) !important;
   border-radius: 99px !important;
   box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
   font-family: 'WebPenMono', monospace !important;
-  font-size: 11px !important;
-  color: rgba(255,255,255,0.8) !important;
+  font-size: 12px !important;
+  color: rgba(255,255,255,0.85) !important;
   white-space: nowrap !important;
-  pointer-events: all !important;
-  animation: webpen-toast-in 0.3s cubic-bezier(0.34,1.56,0.64,1) !important;
-  transition: opacity 0.35s ease !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  transform: translateX(-50%) translateY(12px) !important;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1) !important;
 }
-#webpen-drive-toast a {
-  all: initial !important;
-  font-family: 'WebPenMono', monospace !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  color: #4ade80 !important;
-  cursor: pointer !important;
-  text-decoration: underline !important;
-  text-underline-offset: 2px !important;
+#webpen-toast.webpen-toast-show {
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(0) !important;
 }
-#webpen-drive-toast a:hover { color: #86efac !important; }
-#webpen-drive-toast.webpen-toast-fade { opacity: 0 !important; }
+#webpen-toast.webpen-toast-fade {
+  opacity: 0 !important;
+  transform: translateX(-50%) translateY(12px) !important;
+}
 
-@keyframes webpen-toast-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* ═══════════════════════════════════════════════════════════════════════════
+   HORIZONTAL ORIENTATION — toolbar lies along the bottom of the screen
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#webpen-toolbar.webpen-horizontal {
+  flex-direction: row !important;
+  top: auto !important;
+  left: 50% !important;
+  bottom: 20px !important;
+  transform: translateX(-50%) !important;
+  padding: 10px 14px !important;
+  gap: 6px !important;
+}
+
+/* Drag handle becomes a vertical grip on the left edge */
+.webpen-horizontal #webpen-drag-handle {
+  width: 5px !important;
+  height: 32px !important;
+  margin: 0 6px 0 0 !important;
+}
+
+/* Logo + dividers rotate to suit a row layout */
+.webpen-horizontal #webpen-logo { margin: 0 4px 0 0 !important; }
+.webpen-horizontal .webpen-divider {
+  width: 1px !important;
+  height: 28px !important;
+  margin: 0 2px !important;
+}
+
+/* Colour grid flows into 2 rows when horizontal */
+.webpen-horizontal #webpen-color-grid {
+  grid-template-columns: none !important;
+  grid-template-rows: repeat(2, auto) !important;
+  grid-auto-flow: column !important;
+}
+
+/* Size slider turns horizontal */
+.webpen-horizontal #webpen-size-wrap { flex-direction: row !important; }
+.webpen-horizontal #webpen-size-slider {
+  -webkit-appearance: none !important;
+  appearance: auto !important;
+  writing-mode: horizontal-tb !important;
+  direction: ltr !important;
+  width: 70px !important;
+  height: 22px !important;
+}
+
+/* Tooltips flip to appear ABOVE the buttons in horizontal mode */
+.webpen-horizontal .webpen-btn::after,
+.webpen-horizontal #webpen-clear-btn::after {
+  left: 50% !important;
+  top: auto !important;
+  bottom: calc(100% + 10px) !important;
+  transform: translateX(-50%) !important;
 }

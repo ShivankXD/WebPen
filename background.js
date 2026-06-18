@@ -5,15 +5,7 @@
  *   webpen-activate          → inject CSS + JS into tab
  *   webpen-deactivate        → call teardown on tab
  *   webpen-capture           → captureVisibleTab + composite + download
- *   webpen-drive-upload      → captureVisibleTab + composite + Drive upload
- *   webpen-get-drawing       → relay to content script, get canvas dataUrl
- *   webpen-revoke-token      → sign out of Drive (clears cached token)
- *
- * NOTE: chrome.identity.getAuthToken with interactive:true CANNOT be called
- * from a service worker — it must be called from an extension page (popup).
- * So Drive uploads are initiated from popup.js, which gets the token there
- * and passes the composited blob dataUrl here for the actual API calls.
- * The SW handles captureVisibleTab (needs tabs permission) + compositing.
+ *   webpen-fetch             → CSP-safe proxy for backend status checks
  */
 
 "use strict";
@@ -47,31 +39,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // Called by the camera button in content.js — downloads screenshot locally
     case "webpen-capture":
       handleLocalCapture(msg, sender, sendResponse);
-      return true;
-
-    // Called by popup.js Drive button — composites and returns blob dataUrl
-    // so popup.js can call Drive API with a fresh interactive token
-    case "webpen-composite-for-drive": {
-      const tabId = msg.tabId;
-      compositeScreenshot(tabId)
-        .then(dataUrl => sendResponse({ ok: true, dataUrl }))
-        .catch(err   => sendResponse({ ok: false, error: err.message }));
-      return true;
-    }
-
-    // Relay to content script — get the raw drawing layer only
-    case "webpen-get-drawing":
-      chrome.tabs.sendMessage(
-        msg.tabId,
-        { action: "webpen-export-canvas" },
-        (resp) => sendResponse(resp)
-      );
-      return true;
-
-    // Clear the Drive folder ID cache (e.g. user deleted the folder manually)
-    case "webpen-clear-folder-cache":
-      chrome.storage.local.remove("webpen_drive_folder_id")
-        .then(() => sendResponse({ ok: true }));
       return true;
   }
 });
@@ -110,49 +77,6 @@ async function toggleWebPen(tabId) {
   const tabs = await getActiveTabs();
   if (tabs.has(tabId)) await deactivateTab(tabId);
   else                  await activateTab(tabId);
-}
-
-// ── Screenshot compositing ────────────────────────────────────────────────────
-
-/**
- * compositeScreenshot(tabId)
- *
- * 1. Capture the visible tab as PNG via captureVisibleTab
- * 2. Ask the content script for its drawing layer
- * 3. Composite drawing on top of page using OffscreenCanvas
- * 4. Return a PNG data URL of the merged result
- */
-async function compositeScreenshot(tabId) {
-  // Get the window ID for this tab
-  const tab = await chrome.tabs.get(tabId);
-
-  // Capture page
-  const pageDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
-
-  // Get drawing layer from content script
-  const drawResp = await new Promise((resolve, reject) => {
-    chrome.tabs.sendMessage(tabId, { action: "webpen-export-canvas" }, (r) => {
-      if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-      else resolve(r);
-    });
-  });
-
-  if (!drawResp?.dataUrl) throw new Error("Could not get drawing layer from page.");
-
-  // Composite
-  const [pageImg, drawImg] = await Promise.all([
-    loadImage(pageDataUrl),
-    loadImage(drawResp.dataUrl),
-  ]);
-
-  const oc  = new OffscreenCanvas(pageImg.width, pageImg.height);
-  const ctx = oc.getContext("2d");
-  ctx.drawImage(pageImg, 0, 0);
-  ctx.drawImage(drawImg, 0, 0, pageImg.width, pageImg.height);
-
-  const blob    = await oc.convertToBlob({ type: "image/png" });
-  const dataUrl = await blobToDataUrl(blob);
-  return dataUrl;
 }
 
 // ── Local download capture (camera button in toolbar) ────────────────────────
@@ -250,15 +174,10 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
 //     "https://webpen-backend.fly.dev"  ← Fly.io deployment
 //     "https://abc123.onrender.com"     ← Render deployment
 //
-// ▶ DO NOT remove the googleapis.com or accounts.google.com entries —
-//   they are required for Drive API calls and OAuth token revocation.
 // ─────────────────────────────────────────────────────────────────────────────
 const PROXY_ALLOWLIST = [
 
-  "https://webpen-backend-7ac1.onrender.com",  // WebPen Render backend
-
-  "https://www.googleapis.com",        // Google Drive API (folder create/search, file upload)
-  "https://accounts.google.com",       // Google OAuth token revocation
+  "https://webpen-backend-7ac1.onrender.com",  // WebPen Render backend (premium status)
 ];
 
 function isAllowedProxyUrl(urlStr) {

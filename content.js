@@ -179,7 +179,7 @@
        */
       #webpen-toolbar,
       #webpen-toggle-btn,
-      #webpen-drive-toast,
+      #webpen-toast,
       .webpen-btn,
       #webpen-logo,
       #webpen-size-label,
@@ -223,7 +223,7 @@
         const override = document.createElement("style");
         override.id    = "webpen-font-fallback";
         override.textContent = `
-          #webpen-toolbar, #webpen-toggle-btn, #webpen-drive-toast,
+          #webpen-toolbar, #webpen-toggle-btn, #webpen-toast,
           .webpen-btn, #webpen-logo, #webpen-size-label,
           #webpen-size-value, #webpen-clear-btn {
             font-family: ${SYSTEM_FONT_STACK} !important;
@@ -249,12 +249,39 @@
     lastX:     0,
     lastY:     0,
     screenLocked: false,
+    horizontal:   false, // toolbar orientation (false = vertical/left, true = horizontal/bottom)
+    isPremium:    false, // unlocks the premium colour palette
   };
 
+  // ── Colour palette ───────────────────────────────────────────────────────────
+  //
+  // The 3 base colours are always free. The premium colours below are locked
+  // behind WebPen Premium — they render with a small padlock badge and cannot
+  // be selected until the user upgrades. On upgrade we unlock them in-place.
+  const FREE_COLORS = [
+    { id: "red",   hex: "#e53935", label: "Red"   },
+    { id: "blue",  hex: "#2979ff", label: "Blue"  },
+    { id: "white", hex: "#f0f0f0", label: "White" },
+  ];
+
+  const PREMIUM_COLORS = [
+    { id: "green",      hex: "#43a047", label: "Green"       },
+    { id: "teal",       hex: "#009688", label: "Teal"        },
+    { id: "cyan",       hex: "#00bcd4", label: "Cyan"        },
+    { id: "indigo",     hex: "#3f51b5", label: "Indigo"      },
+    { id: "purple",     hex: "#8e24aa", label: "Purple"      },
+    { id: "magenta",    hex: "#d500f9", label: "Magenta"     },
+    { id: "pink",       hex: "#ec407a", label: "Pink"        },
+    { id: "orange",     hex: "#fb8c00", label: "Orange"      },
+    { id: "deeporange", hex: "#f4511e", label: "Deep Orange" },
+    { id: "yellow",     hex: "#fdd835", label: "Yellow"      },
+    { id: "lime",       hex: "#c0ca33", label: "Lime"        },
+    { id: "brown",      hex: "#795548", label: "Brown"       },
+  ];
+
   const COLORS = [
-    { id: "red",   hex: "#e53935" },
-    { id: "blue",  hex: "#2979ff" },
-    { id: "black", hex: "#f0f0f0" },
+    ...FREE_COLORS.map(c   => ({ ...c, premium: false })),
+    ...PREMIUM_COLORS.map(c => ({ ...c, premium: true  })),
   ];
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -346,14 +373,27 @@
 
     <div class="webpen-divider"></div>
 
-    ${COLORS.map(c => `
-      <div class="webpen-btn ${c.hex === state.color ? "webpen-selected" : ""}"
+    ${FREE_COLORS.map(c => `
+      <div class="webpen-btn webpen-color-btn ${c.hex === state.color ? "webpen-selected" : ""}"
            id="webpen-color-${c.id}"
            data-color="${c.hex}"
-           data-tip="${c.id[0].toUpperCase() + c.id.slice(1)}">
+           data-tip="${c.label}">
         <span class="webpen-color-dot" style="background:${c.hex}"></span>
       </div>
     `).join("")}
+
+    <div class="webpen-btn webpen-locked" id="webpen-palette-btn"
+         data-tip="Buy Premium for the full palette">
+      <span class="webpen-color-dot webpen-rainbow-dot"></span>
+      <span class="webpen-color-lock">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
+             stroke="#0d0d0f" stroke-width="3"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      </span>
+    </div>
 
     <div class="webpen-divider"></div>
 
@@ -365,6 +405,16 @@
     </div>
 
     <div class="webpen-divider"></div>
+
+    <div class="webpen-btn" id="webpen-orient-btn" data-tip="Move bar to bottom">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="rgba(255,255,255,0.75)" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 3v18" />
+        <path d="M3 12h12" />
+        <path d="M11 8l-4 4 4 4" />
+      </svg>
+    </div>
 
     <div class="webpen-divider"></div>
 
@@ -385,18 +435,6 @@
            stroke-linecap="round" stroke-linejoin="round">
         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
         <circle cx="12" cy="13" r="4"/>
-      </svg>
-    </div>
-
-    <div class="webpen-btn webpen-drive-btn webpen-hidden"
-         id="webpen-drive-btn" data-tip="Sync to Google Drive">
-      <svg width="17" height="15" viewBox="0 0 87.3 78" fill="none">
-        <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-        <path d="M43.65 25L29.9 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 48.5c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
-        <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 57c.8-1.4 1.2-2.95 1.2-4.5H59.8z" fill="#ea4335"/>
-        <path d="M43.65 25L57.4 0H29.9z" fill="#00832d"/>
-        <path d="M59.8 52.5H87.3c0-1.55-.4-3.1-1.2-4.5L60.8 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25z" fill="#2684fc"/>
-        <path d="M27.5 53l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h51c1.6 0 3.15-.45 4.5-1.2L59.8 53z" fill="#ffba00"/>
       </svg>
     </div>
 
@@ -427,6 +465,13 @@
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION E — TOOLBAR DRAG
   // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // The toolbar can be picked up by the drag handle at the leading edge (the
+  // top in vertical mode, the left in horizontal mode). The handle shows a
+  // grab/grabbing cursor so users discover it is movable. Dragging writes
+  // explicit left/top pixel values and clears the centering transform so the
+  // bar follows the cursor exactly. We clamp the final position inside the
+  // viewport so the bar can never be dragged fully off-screen.
 
   let dragActive = false, dragStartX = 0, dragStartY = 0,
       tbStartLeft = 0, tbStartTop = 0;
@@ -440,18 +485,67 @@
     const rect  = toolbar.getBoundingClientRect();
     tbStartLeft = rect.left;
     tbStartTop  = rect.top;
+    handle.classList.add("webpen-dragging");
     e.stopPropagation();
     e.preventDefault();
   });
 
   document.addEventListener("mousemove", (e) => {
     if (!dragActive) return;
-    toolbar.style.left      = (tbStartLeft + e.clientX - dragStartX) + "px";
-    toolbar.style.top       = (tbStartTop  + e.clientY - dragStartY) + "px";
+    const rect   = toolbar.getBoundingClientRect();
+    const maxLeft = Math.max(0, window.innerWidth  - rect.width);
+    const maxTop  = Math.max(0, window.innerHeight - rect.height);
+    const nextLeft = tbStartLeft + e.clientX - dragStartX;
+    const nextTop  = tbStartTop  + e.clientY - dragStartY;
+    toolbar.style.left      = Math.min(Math.max(0, nextLeft), maxLeft) + "px";
+    toolbar.style.top       = Math.min(Math.max(0, nextTop),  maxTop)  + "px";
+    toolbar.style.right     = "auto";
+    toolbar.style.bottom    = "auto";
     toolbar.style.transform = "none";
   });
 
-  document.addEventListener("mouseup", () => { dragActive = false; });
+  document.addEventListener("mouseup", () => {
+    dragActive = false;
+    handle.classList.remove("webpen-dragging");
+  });
+
+  // ── Orientation toggle (vertical ⇄ horizontal) ───────────────────────────────
+  //
+  // Switching orientation clears any inline position set by dragging so the bar
+  // snaps back to the default anchor for the new layout (left-centre when
+  // vertical, bottom-centre when horizontal). The choice is persisted so it
+  // survives re-injection on the next page.
+  const orientBtn = document.getElementById("webpen-orient-btn");
+
+  function applyOrientation(horizontal) {
+    state.horizontal = horizontal;
+    toolbar.classList.toggle("webpen-horizontal", horizontal);
+    // Reset any drag offset so CSS default positioning takes over
+    toolbar.style.left = "";
+    toolbar.style.top = "";
+    toolbar.style.right = "";
+    toolbar.style.bottom = "";
+    toolbar.style.transform = "";
+    if (orientBtn) {
+      orientBtn.setAttribute(
+        "data-tip",
+        horizontal ? "Move bar to side" : "Move bar to bottom"
+      );
+    }
+  }
+
+  orientBtn?.addEventListener("click", () => {
+    const next = !state.horizontal;
+    applyOrientation(next);
+    try { chrome.storage?.local.set({ webpen_orientation: next ? "horizontal" : "vertical" }); } catch {}
+  });
+
+  // Restore persisted orientation
+  try {
+    chrome.storage?.local.get("webpen_orientation", ({ webpen_orientation }) => {
+      if (webpen_orientation === "horizontal") applyOrientation(true);
+    });
+  } catch {}
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION F — DRAWING MODE TOGGLE
@@ -498,16 +592,62 @@
     .addEventListener("click", () => selectTool("eraser"));
 
   COLORS.forEach(c => {
-    document.getElementById(`webpen-color-${c.id}`)
-      .addEventListener("click", () => {
-        state.color = c.hex;
-        selectTool("pen");
-        COLORS.forEach(cc => {
-          document.getElementById(`webpen-color-${cc.id}`)
-            .classList.toggle("webpen-selected", cc.hex === c.hex);
-        });
+    const el = document.getElementById(`webpen-color-${c.id}`);
+    el.addEventListener("click", () => {
+      // Locked premium colour — nudge the user toward upgrading instead.
+      if (c.premium && !state.isPremium) {
+        el.classList.add("webpen-shake");
+        setTimeout(() => el.classList.remove("webpen-shake"), 500);
+        showToast("Upgrade to Premium to unlock all colours ✨");
+        return;
+      }
+      state.color = c.hex;
+      selectTool("pen");
+      COLORS.forEach(cc => {
+        document.getElementById(`webpen-color-${cc.id}`)
+          .classList.toggle("webpen-selected", cc.hex === c.hex);
       });
+    });
   });
+
+  // ── Premium colour unlock ────────────────────────────────────────────────────
+  function unlockPremiumColors() {
+    state.isPremium = true;
+    PREMIUM_COLORS.forEach(c => {
+      const el = document.getElementById(`webpen-color-${c.id}`);
+      if (!el) return;
+      el.classList.remove("webpen-locked");
+      el.setAttribute("data-tip", c.label);
+    });
+  }
+
+  // Read current premium status on load
+  try {
+    chrome.storage?.sync.get("isPremium", ({ isPremium }) => {
+      if (isPremium) unlockPremiumColors();
+    });
+  } catch {}
+
+  // ── Lightweight toast (upgrade nudge / generic notices) ──────────────────────
+  let toastTimer = null;
+  function showToast(message) {
+    let toast = document.getElementById("webpen-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "webpen-toast";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.remove("webpen-toast-fade");
+    // Force reflow so the fade-in animation restarts each time
+    void toast.offsetWidth;
+    toast.classList.add("webpen-toast-show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove("webpen-toast-show");
+      toast.classList.add("webpen-toast-fade");
+    }, 3200);
+  }
 
   const slider  = document.getElementById("webpen-size-slider");
   const sizeVal = document.getElementById("webpen-size-value");
@@ -777,82 +917,7 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SECTION K — DRIVE BUTTON (PREMIUM)
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  (async () => {
-    const { isPremium = false } = await chrome.storage.sync.get("isPremium");
-    if (isPremium) revealDriveButton();
-  })();
-
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.action === "webpen-premium-activated") revealDriveButton();
-  });
-
-  function revealDriveButton() {
-    document.getElementById("webpen-drive-btn")?.classList.remove("webpen-hidden");
-  }
-
-  document.getElementById("webpen-drive-btn")
-    ?.addEventListener("click", () => {
-      const btn = document.getElementById("webpen-drive-btn");
-      if (btn.dataset.busy === "1") return;
-      btn.dataset.busy = "1";
-      btn.classList.add("webpen-drive-syncing");
-
-      /*
-       * CSP RULE A applied here:
-       * Drive upload is initiated from popup.js (extension page), not here.
-       * We send a message to trigger the popup flow; the popup handles
-       * OAuth + Drive API fetch (popup runs at extension origin, no CSP).
-       */
-      chrome.runtime.sendMessage(
-        { action: "webpen-drive-trigger",
-          drawingDataUrl: canvas.toDataURL("image/png") },
-        (response) => {
-          btn.classList.remove("webpen-drive-syncing");
-          delete btn.dataset.busy;
-
-          if (response?.ok) {
-            btn.classList.add("webpen-drive-success");
-            if (response.webViewLink) {
-              showDriveToast(response.webViewLink, response.fileName);
-            }
-            setTimeout(() => btn.classList.remove("webpen-drive-success"), 2500);
-          } else {
-            btn.classList.add("webpen-drive-error");
-            setTimeout(() => btn.classList.remove("webpen-drive-error"), 2500);
-            console.error("[WebPen Drive] Upload failed:", response?.error);
-          }
-        }
-      );
-    });
-
-  function showDriveToast(url, fileName) {
-    document.getElementById("webpen-drive-toast")?.remove();
-    const toast = document.createElement("div");
-    toast.id    = "webpen-drive-toast";
-    // Safe because url/fileName come from our own extension backend, not page
-    const safeFileName = (fileName || "screenshot").replace(/[<>"]/g, "");
-    const safeUrl      = url.startsWith("https://drive.google.com") ? url : "#";
-    toast.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-           stroke="#4ade80" stroke-width="2.5"
-           stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
-      <span>Saved: ${safeFileName}</span>
-      <a href="${safeUrl}" target="_blank" rel="noopener noreferrer">Open ↗</a>
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.classList.add("webpen-toast-fade");
-      setTimeout(() => toast.remove(), 400);
-    }, 5000);
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SECTION L — MESSAGE LISTENER
+  // SECTION K — MESSAGE LISTENER
   // (must be inside IIFE — needs canvas in closure scope)
   // ═══════════════════════════════════════════════════════════════════════════
 
@@ -864,23 +929,16 @@
         sendResponse({ dataUrl: canvas.toDataURL("image/png") });
         return true;
 
-      // popup.js reports Drive upload success — update toolbar button
-      case "webpen-drive-upload-done": {
-        const btn = document.getElementById("webpen-drive-btn");
-        if (btn) {
-          btn.classList.add("webpen-drive-success");
-          setTimeout(() => btn.classList.remove("webpen-drive-success"), 2500);
-        }
-        if (msg.ok && msg.webViewLink) {
-          showDriveToast(msg.webViewLink, msg.fileName);
-        }
+      // popup.js reports the user just upgraded — unlock the premium palette
+      case "webpen-premium-activated":
+        unlockPremiumColors();
+        showToast("Premium unlocked — all colours are yours! ✨");
         return false;
-      }
     }
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SECTION M — TEARDOWN
+  // SECTION L — TEARDOWN
   // ═══════════════════════════════════════════════════════════════════════════
 
   window.__webPenTeardown = function () {
@@ -903,7 +961,7 @@
     toolbar.remove();
     toggleBtn.remove();
     document.getElementById("webpen-font-face")?.remove();
-    document.getElementById("webpen-drive-toast")?.remove();
+    document.getElementById("webpen-toast")?.remove();
     document.getElementById("webpen-flash-overlay")?.remove();
 
     delete window.__webPenTeardown;
