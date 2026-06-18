@@ -82,7 +82,7 @@
       Upgrade to Premium
     </button>
 
-    <p class="footer-note">v2.0 · Made with ♥ in India</p>
+    <p class="footer-note">WebPen · v4.2.0</p>
   </div>
 
   <!-- ── Upgrade modal ──────────────────────────────── -->
@@ -96,24 +96,28 @@
 
       <div class="modal-eyebrow">Unlock the full palette</div>
       <h2 class="modal-title">WebPen<br /><span>Premium</span></h2>
-      <p class="modal-subtitle">All 15 colours. Just $1. Forever yours.</p>
+      <p class="modal-subtitle">All 15 colours + priority support. Pick a plan:</p>
 
-      <!-- Pricing card -->
-      <div class="pricing-card">
-        <div class="price-row">
-          <span class="price-amount">$1</span>
-          <div class="price-meta">
-            <span class="price-period">/ month</span>
-            <span class="price-inr">≈ ₹85 / mo</span>
-          </div>
-        </div>
-        <ul class="modal-features">
-          <li><span class="check">✓</span> Unlock all 15 pen colours</li>
-          <li><span class="check">✓</span> 12 extra premium colours</li>
-          <li><span class="check">✓</span> Priority support</li>
-          <li><span class="check">✓</span> All future Premium features</li>
-        </ul>
+      <!-- Plan picker (two side-by-side options) -->
+      <div class="plan-grid">
+        <button type="button" class="plan-card selected" data-plan="monthly" data-label="Monthly">
+          <span class="plan-name">Monthly</span>
+          <span class="plan-price">$1<span class="plan-per">/mo</span></span>
+          <span class="plan-sub">Billed monthly · cancel anytime</span>
+        </button>
+        <button type="button" class="plan-card plan-deal" data-plan="lifetime" data-label="Lifetime">
+          <span class="plan-flag">LIMITED TIME</span>
+          <span class="plan-name">Lifetime</span>
+          <span class="plan-price">$6<span class="plan-per">once</span></span>
+          <span class="plan-sub">Pay once · all future updates</span>
+        </button>
       </div>
+
+      <ul class="modal-features">
+        <li><span class="check">✓</span> Unlock all 15 pen colours</li>
+        <li><span class="check">✓</span> Priority support</li>
+        <li><span class="check">✓</span> All future Premium features</li>
+      </ul>
 
       <!-- PayPal subscription button checkout link -->
       <button id="checkout-btn" class="checkout-btn">

@@ -139,11 +139,24 @@ function applyActiveUI(isActive) {
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 let statusPollInterval = null;
+let selectedPlan = "monthly"; // "monthly" ($1/mo) | "lifetime" ($6 once)
 
 function openModal() {
   document.body.classList.add("modal-open");
   modalBackdrop.classList.remove("hidden");
+  setupPlanPicker();
   setupCheckoutButton();
+}
+
+// Let the user toggle between the Monthly and Lifetime plan cards
+function setupPlanPicker() {
+  const cards = document.querySelectorAll(".plan-card");
+  cards.forEach(card => {
+    card.onclick = () => {
+      selectedPlan = card.getAttribute("data-plan") || "monthly";
+      cards.forEach(c => c.classList.toggle("selected", c === card));
+    };
+  });
 }
 
 function closeModal() {
@@ -167,7 +180,9 @@ function setupCheckoutButton() {
 
     try {
       const userId = await getExtensionUserId();
-      const checkoutUrl = `${BACKEND_BASE_URL}/checkout.html?userId=${encodeURIComponent(userId)}`;
+      const checkoutUrl =
+        `${BACKEND_BASE_URL}/checkout.html?userId=${encodeURIComponent(userId)}` +
+        `&plan=${encodeURIComponent(selectedPlan)}`;
 
       // Open a native-looking secure payment dialog window
       chrome.windows.create({

@@ -450,6 +450,29 @@
         <line x1="14" y1="11" x2="14" y2="17"></line>
       </svg>
     </div>
+
+    <div id="webpen-color-flyout" class="webpen-hidden">
+      <div id="webpen-flyout-head">
+        <span id="webpen-flyout-title">Premium colours</span>
+        <div id="webpen-flyout-close" data-tip="Close palette">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="rgba(255,255,255,0.7)" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </div>
+      </div>
+      <div id="webpen-flyout-grid">
+      ${COLORS.map(c => `
+        <div class="webpen-btn webpen-color-btn ${c.hex === state.color ? "webpen-selected" : ""}"
+             id="webpen-flyout-color-${c.id}"
+             data-color="${c.hex}"
+             data-tip="${c.label}">
+          <span class="webpen-color-dot" style="background:${c.hex}"></span>
+        </div>
+      `).join("")}
+      </div>
+    </div>
   `;
   document.body.appendChild(toolbar);
 
@@ -497,11 +520,13 @@
     const maxTop  = Math.max(0, window.innerHeight - rect.height);
     const nextLeft = tbStartLeft + e.clientX - dragStartX;
     const nextTop  = tbStartTop  + e.clientY - dragStartY;
-    toolbar.style.left      = Math.min(Math.max(0, nextLeft), maxLeft) + "px";
-    toolbar.style.top       = Math.min(Math.max(0, nextTop),  maxTop)  + "px";
-    toolbar.style.right     = "auto";
-    toolbar.style.bottom    = "auto";
-    toolbar.style.transform = "none";
+    // NOTE: content.css anchors the toolbar with `!important`, so plain inline
+    // styles are ignored. setProperty(..., "important") is required to win.
+    toolbar.style.setProperty("left", Math.min(Math.max(0, nextLeft), maxLeft) + "px", "important");
+    toolbar.style.setProperty("top",  Math.min(Math.max(0, nextTop),  maxTop)  + "px", "important");
+    toolbar.style.setProperty("right",  "auto", "important");
+    toolbar.style.setProperty("bottom", "auto", "important");
+    toolbar.style.setProperty("transform", "none", "important");
   });
 
   document.addEventListener("mouseup", () => {
@@ -591,34 +616,58 @@
   document.getElementById("webpen-tool-eraser")
     .addEventListener("click", () => selectTool("eraser"));
 
-  COLORS.forEach(c => {
-    const el = document.getElementById(`webpen-color-${c.id}`);
-    el.addEventListener("click", () => {
-      // Locked premium colour — nudge the user toward upgrading instead.
-      if (c.premium && !state.isPremium) {
-        el.classList.add("webpen-shake");
-        setTimeout(() => el.classList.remove("webpen-shake"), 500);
-        showToast("Upgrade to Premium to unlock all colours ✨");
-        return;
-      }
-      state.color = c.hex;
-      selectTool("pen");
-      COLORS.forEach(cc => {
-        document.getElementById(`webpen-color-${cc.id}`)
-          .classList.toggle("webpen-selected", cc.hex === c.hex);
-      });
+  // ── Colour selection ─────────────────────────────────────────────────────────
+  //
+  // A colour can be picked from the slim bar (the 3 free swatches) or from the
+  // premium flyout panel. Both sets share the `.webpen-color-btn` class and a
+  // `data-color` attribute, so selecting one syncs the highlight everywhere.
+  function selectColor(hex) {
+    state.color = hex;
+    selectTool("pen");
+    document.querySelectorAll(".webpen-color-btn").forEach(btn => {
+      btn.classList.toggle("webpen-selected", btn.getAttribute("data-color") === hex);
     });
+  }
+
+  // Free swatches on the bar
+  FREE_COLORS.forEach(c => {
+    document.getElementById(`webpen-color-${c.id}`)
+      ?.addEventListener("click", () => selectColor(c.hex));
   });
 
-  // ── Premium colour unlock ────────────────────────────────────────────────────
+  // Full-palette swatches inside the flyout
+  COLORS.forEach(c => {
+    document.getElementById(`webpen-flyout-color-${c.id}`)
+      ?.addEventListener("click", () => selectColor(c.hex));
+  });
+
+  // ── Premium palette button + flyout ──────────────────────────────────────────
+  const paletteBtn  = document.getElementById("webpen-palette-btn");
+  const colorFlyout = document.getElementById("webpen-color-flyout");
+  const flyoutClose = document.getElementById("webpen-flyout-close");
+
+  function openFlyout()  { colorFlyout?.classList.remove("webpen-hidden"); paletteBtn?.classList.add("webpen-selected"); }
+  function closeFlyout() { colorFlyout?.classList.add("webpen-hidden");    paletteBtn?.classList.remove("webpen-selected"); }
+
+  paletteBtn?.addEventListener("click", () => {
+    // Locked until the user upgrades — nudge them toward Premium.
+    if (!state.isPremium) {
+      paletteBtn.classList.add("webpen-shake");
+      setTimeout(() => paletteBtn.classList.remove("webpen-shake"), 500);
+      showToast("Buy Premium to access the full colour palette ✨");
+      return;
+    }
+    if (colorFlyout?.classList.contains("webpen-hidden")) openFlyout();
+    else closeFlyout();
+  });
+
+  flyoutClose?.addEventListener("click", closeFlyout);
+
+  // ── Premium unlock — turns the rainbow button into a palette opener ──────────
   function unlockPremiumColors() {
     state.isPremium = true;
-    PREMIUM_COLORS.forEach(c => {
-      const el = document.getElementById(`webpen-color-${c.id}`);
-      if (!el) return;
-      el.classList.remove("webpen-locked");
-      el.setAttribute("data-tip", c.label);
-    });
+    paletteBtn?.classList.remove("webpen-locked");
+    paletteBtn?.setAttribute("data-tip", "Premium colour palette");
   }
 
   // Read current premium status on load

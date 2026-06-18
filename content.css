@@ -192,22 +192,6 @@
 }
 .webpen-btn:hover::after { opacity: 1 !important; }
 
-/* Color palette grid — keeps the 15 swatches compact (3 columns) */
-#webpen-color-grid {
-  all: initial;
-  display: grid !important;
-  grid-template-columns: repeat(3, auto) !important;
-  gap: 2px !important;
-  justify-items: center !important;
-  align-items: center !important;
-}
-
-/* Compact color buttons inside the grid */
-.webpen-color-btn {
-  width: 28px !important;
-  height: 28px !important;
-}
-
 /* Color swatches */
 .webpen-color-dot {
   all: initial;
@@ -221,21 +205,29 @@
   box-shadow: 0 0 0 2px rgba(255,255,255,0.6), 0 1px 4px rgba(0,0,0,0.5) !important;
 }
 
-/* ── Premium (locked) colours ────────────────────────────────────────────── */
-.webpen-premium-color { position: relative !important; }
-
-/* Dim the swatch while it's locked */
-.webpen-premium-color.webpen-locked .webpen-color-dot {
-  opacity: 0.45 !important;
-  filter: grayscale(0.35) !important;
+/* Rainbow palette button — opens the premium colour flyout */
+.webpen-rainbow-dot {
+  background: conic-gradient(
+    #e53935, #fb8c00, #fdd835, #43a047,
+    #00bcd4, #3f51b5, #8e24aa, #e53935
+  ) !important;
 }
 
-/* Small gold padlock badge in the corner of locked swatches */
+/* ── Locked (premium) button ─────────────────────────────────────────────── */
+#webpen-palette-btn { position: relative !important; }
+
+/* Dim the rainbow dot while locked */
+.webpen-locked .webpen-color-dot {
+  opacity: 0.5 !important;
+  filter: grayscale(0.2) !important;
+}
+
+/* Small gold padlock badge in the corner of locked buttons */
 .webpen-color-lock {
   all: initial;
   position: absolute !important;
-  right: 0 !important;
-  bottom: 0 !important;
+  right: -1px !important;
+  bottom: -1px !important;
   width: 13px !important;
   height: 13px !important;
   display: none !important;
@@ -246,11 +238,9 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important;
   pointer-events: none !important;
 }
-.webpen-premium-color.webpen-locked .webpen-color-lock {
-  display: flex !important;
-}
+.webpen-locked .webpen-color-lock { display: flex !important; }
 
-/* Shake feedback when a locked colour is clicked */
+/* Shake feedback when a locked button is clicked */
 .webpen-shake { animation: webpen-shake 0.45s ease !important; }
 @keyframes webpen-shake {
   0%, 100% { transform: translateX(0); }
@@ -259,6 +249,72 @@
   60%      { transform: translateX(-2px); }
   80%      { transform: translateX(2px); }
 }
+
+/* ── Premium colour flyout panel ──────────────────────────────────────────── */
+#webpen-color-flyout {
+  all: initial;
+  position: absolute !important;
+  left: calc(100% + 12px) !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: 150px !important;
+  padding: 12px !important;
+  background: #0d0d0f !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+}
+#webpen-color-flyout.webpen-hidden { display: none !important; }
+
+#webpen-flyout-head {
+  all: initial;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+#webpen-flyout-title {
+  all: initial;
+  font-family: 'WebPenMono', monospace !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,0.4) !important;
+}
+#webpen-flyout-close {
+  all: initial;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 7px !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+}
+#webpen-flyout-close:hover { background: rgba(255,255,255,0.1) !important; }
+
+#webpen-flyout-grid {
+  all: initial;
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: 4px !important;
+  justify-items: center !important;
+}
+#webpen-flyout-grid .webpen-color-btn {
+  width: 24px !important;
+  height: 24px !important;
+}
+#webpen-flyout-grid .webpen-color-dot {
+  width: 16px !important;
+  height: 16px !important;
+}
+/* Flyout tooltips would overflow the small panel — suppress them */
+#webpen-flyout-grid .webpen-btn::after { display: none !important; }
 
 /* Brush size slider */
 #webpen-size-wrap {
@@ -488,11 +544,13 @@
   margin: 0 2px !important;
 }
 
-/* Colour grid flows into 2 rows when horizontal */
-.webpen-horizontal #webpen-color-grid {
-  grid-template-columns: none !important;
-  grid-template-rows: repeat(2, auto) !important;
-  grid-auto-flow: column !important;
+/* Flyout opens above the bar (instead of to the right) when horizontal */
+.webpen-horizontal #webpen-color-flyout {
+  left: auto !important;
+  right: 0 !important;
+  top: auto !important;
+  bottom: calc(100% + 12px) !important;
+  transform: none !important;
 }
 
 /* Size slider turns horizontal */
