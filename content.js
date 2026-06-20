@@ -932,25 +932,28 @@
     btn.dataset.busy = "1";
     btn.classList.add("webpen-capturing");
 
-    // Camera-shutter flash
-    const flash = document.createElement("div");
-    flash.id    = "webpen-flash-overlay";
-    document.body.appendChild(flash);
-    setTimeout(() => flash.remove(), 400);
-
-    // Export drawing layer — used by background.js to composite over the page
-    const drawingDataUrl = canvas.toDataURL("image/png");
-
     /*
-     * CSP RULE A applied here:
-     * We do NOT fetch() any URL. We pass the drawing data to background.js
-     * via sendMessage. background.js runs in the extension SW origin and
-     * calls captureVisibleTab() + triggers the download — both outside the
-     * host page's CSP.
+     * The screenshot is just captureVisibleTab() in background.js — a pixel
+     * grab of the visible viewport. That means WebPen's own UI (the toolbar
+     * and the DRAWING ON/OFF pill) would show up in the image. So we hide
+     * those elements first, capture, then restore them. The drawing canvas
+     * stays visible, so the user's drawings ARE included.
+     *
+     * CSP RULE A: we don't fetch() anything. background.js (extension SW
+     * origin) does captureVisibleTab + chrome.downloads.download.
      */
-    chrome.runtime.sendMessage(
-      { action: "webpen-capture", drawingDataUrl },
-      (response) => {
+    // display:none removes the element from rendering entirely (stronger than
+    // visibility:hidden and immune to compositor-layer quirks from will-change).
+    const hideEls = [toolbar, toggleBtn, document.getElementById("webpen-toast")];
+    hideEls.forEach(el => el && el.style.setProperty("display", "none", "important"));
+
+    const restoreUI = () => {
+      hideEls.forEach(el => el && el.style.removeProperty("display"));
+    };
+
+    const doCapture = () => {
+      chrome.runtime.sendMessage({ action: "webpen-capture" }, (response) => {
+        restoreUI();
         btn.classList.remove("webpen-capturing");
         delete btn.dataset.busy;
 
@@ -960,8 +963,21 @@
         } else {
           btn.classList.add("webpen-capture-success");
           setTimeout(() => btn.classList.remove("webpen-capture-success"), 1000);
+
+          // Camera-shutter flash AFTER capture, so it isn't in the image
+          const flash = document.createElement("div");
+          flash.id    = "webpen-flash-overlay";
+          document.body.appendChild(flash);
+          setTimeout(() => flash.remove(), 400);
         }
-      }
+      });
+    };
+
+    // rAF callbacks run BEFORE paint, so sending the capture there can race the
+    // repaint and still grab our UI. Schedule two frames, then a short timeout
+    // that fires AFTER the hidden state has actually been painted to screen.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => setTimeout(doCapture, 70))
     );
   }
 

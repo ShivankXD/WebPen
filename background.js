@@ -80,23 +80,18 @@ async function toggleWebPen(tabId) {
 }
 
 // ── Local download capture (camera button in toolbar) ────────────────────────
+//
+// The content script hides WebPen's own UI (toolbar + DRAWING ON/OFF pill)
+// before sending this message, and keeps the drawing canvas visible. So the
+// captureVisibleTab() image already contains the page + the user's drawings
+// WITHOUT our UI — we just download it straight to the user's Downloads folder.
 async function handleLocalCapture(msg, sender, sendResponse) {
   try {
     const pageDataUrl = await chrome.tabs.captureVisibleTab(
       sender.tab.windowId, { format: "png" }
     );
-    const [pageImg, drawImg] = await Promise.all([
-      loadImage(pageDataUrl),
-      loadImage(msg.drawingDataUrl),
-    ]);
-    const oc  = new OffscreenCanvas(pageImg.width, pageImg.height);
-    const ctx = oc.getContext("2d");
-    ctx.drawImage(pageImg, 0, 0);
-    ctx.drawImage(drawImg, 0, 0, pageImg.width, pageImg.height);
-    const blob     = await oc.convertToBlob({ type: "image/png" });
-    const finalUrl = await blobToDataUrl(blob);
     await chrome.downloads.download({
-      url:      finalUrl,
+      url:      pageDataUrl,
       filename: "webpen-screenshot.png",
       saveAs:   false,
     });
@@ -105,25 +100,6 @@ async function handleLocalCapture(msg, sender, sendResponse) {
     console.error("[WebPen] Local capture error:", err);
     sendResponse({ ok: false, error: err.message });
   }
-}
-
-// ── Utilities ─────────────────────────────────────────────────────────────────
-function loadImage(src) {
-  return new Promise((res, rej) => {
-    const img = new Image();
-    img.onload  = () => res(img);
-    img.onerror = () => rej(new Error("Image load failed"));
-    img.src = src;
-  });
-}
-
-function blobToDataUrl(blob) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result);
-    r.onerror = () => rej(new Error("FileReader error"));
-    r.readAsDataURL(blob);
-  });
 }
 
 // ── Tab lifecycle cleanup ─────────────────────────────────────────────────────
