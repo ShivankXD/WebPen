@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WebPen: Page Marker & Web Drawing Tool",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "description": "Draw on any webpage. A movable toolbar, screenshots, and a 15-colour palette with Premium.",
   "permissions": [
     "activeTab",
